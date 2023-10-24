@@ -2,7 +2,7 @@
 Versatile Ordering Network (VON) can be used across tasks, objectives, and data distributions. By leveraging the power of reinforcement learning and a greedy rollout strategy, the network can automatically learn ordering strategies to improve itself.
 
 # Paper
-Reviewing
+Revising
 
 ## Dependencies
 
