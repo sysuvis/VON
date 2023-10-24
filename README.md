@@ -21,7 +21,7 @@ Reviewing
 1. python .\flaskfordemo.py
 ```
 ```commandline
-2. Double click 'panel.html' in the /demo to start.
+2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
 ```
 ```commandline
 3. Choose 'TSP' as the loss.
