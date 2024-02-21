@@ -64,13 +64,12 @@ elif cost_choose == 'moransI':
        return ret_res, None
 ```
 
-
 ### Training
 Options:
 --graph_size: >=2, eg. 20, 50, 100...;
 --run_name: any words are permitted;
 --mission: 'CIFAR10', 'fashionmnist';
---cost_choose: TSP, stress, moransI;
+--cost_choose: TSP, stress, moransI.
 
 For model, you can change the options 'model' in the 'second_layer_decoder' of nets/attention_model.py. You can choose 'm', 'a', 'c' and 'AM'.
 
@@ -79,16 +78,19 @@ eg.
 python run.py --graph_size 50 --baseline rollout --run_name 'test' --mission 'CIFAR10' --cost_choose stress
 ```
 ### Testing
+Options:
+--mission: 'CIFAR10', 'fashionmnist', 'demo';
+--size: >=2, eg. 20, 50, 100...;
+--model: The model lib;
+--dataset_number and --decode_strategy are no need to change.
 
 1. Move the trained model to target file(eg. pretrained/)
-2. Run: eg.```commandline "python eval.py --model 'pretrained/TSP' --decode_strategy 'greedy' -f --run_mode 'test' --mission 'demo' --dataset_number 1 --size 50"```
+2. Run: eg.``` python eval.py --model 'pretrained/TSP' --decode_strategy 'greedy' -f --run_mode 'test' --mission 'demo' --dataset_number 1 --size 50 ```
 All the options of command can be replaced following your needs.
 
 ### With demo
-1.
-```commandline python .\flaskfordemo.py```
+1.```python .\flaskfordemo.py```
 2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
 3. Choose 'TSP' as the loss.
 4. Brush points in the scatter. And wait seconds.
 5. Then you can freely explore. 
-       
