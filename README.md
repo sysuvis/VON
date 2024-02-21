@@ -1,9 +1,6 @@
 # VON
 Versatile Ordering Network (VON) can be used across tasks, objectives, and data distributions. By leveraging the power of reinforcement learning and a greedy rollout strategy, the network can automatically learn ordering strategies to improve itself.
 
-# Paper
-Revising
-
 ## Dependencies
 
 * Python>=3.8
@@ -30,42 +27,69 @@ Revising
 
 ## Usage
 
-### With demo
+### How to input your data
+
+1. Prepare your data to the size: [num_sample, num_points, dim]. The 'num_sample' is the sampling number. The 'num_points' is the points amount. The 'dim' is the dimension of your embedding.
+2. Change the 'node_dim' to your need in nets/attention_model.py.
+4. Implement your code at '__init__' of problems/order/problem_order.py. Here is an example for data adding:
 ```commandline
-1. python .\flaskfordemo.py
+...
+elif mission == 'dblp':
+       if mode == 'train':
+              with open('data/DBLP/dblp_50_dis_mix_train_tsne.pkl', 'rb') as f1:
+                    data_tsne = pickle.load(f1)
+              self.data = data_tsne
+       elif mode == 'test':
+              with open('data/DBLP/dblp_100_dis_g_o_tsne_test.pkl', 'rb') as f1:
+                    data_tsne = pickle.load(f1)
+              self.data = [data_tsne, data_tsne]
+       else:
+              print('Please input right run mode!')
+...
 ```
+Note: The nan and inf are not allowed in data.
+
+### How to use your metric
+1. Implement your metric by any way in python.
+2. Add them into 'get_costs' of problems/order/problem_order.py. Here is an example:
 ```commandline
-2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
+def moransi(d):
+       ...
+       return ...
+...
+elif cost_choose == 'moransI':
+       ret_res = torch.zeros(d.size(0))
+       for a in range(d.size(0)):
+              ret_res[a] = 1- moransi(d[a, :, :])
+       return ret_res, None
 ```
-```commandline
-3. Choose 'TSP' as the loss.
-```
-```commandline
-4. Brush points in the scatter. And wait seconds.
-```
-```commandline
-5. Then you can freely explore.
-```
+
 
 ### Training
+Options:
+--graph_size: >=2, eg. 20, 50, 100...;
+--run_name: any words are permitted;
+--mission: 'CIFAR10', 'fashionmnist';
+--cost_choose: TSP, stress, moransI;
 
+For model, you can change the options 'model' in the 'second_layer_decoder' of nets/attention_model.py. You can choose 'm', 'a', 'c' and 'AM'.
+
+eg.
 ```commandline
-python run.py --graph_size $size$ --baseline rollout --run_name $name$ --mission $data$ --cost_choose $loss$
-eg. python run.py --graph_size 50 --baseline rollout --run_name 'test' --mission 'CIFAR10' --cost_choose stress
+python run.py --graph_size 50 --baseline rollout --run_name 'test' --mission 'CIFAR10' --cost_choose stress
 ```
 ### Testing
 
-```commandline
 1. Move the trained model to target file(eg. pretrained/)
-```
-```commandline
-2. Run: eg. "python eval.py --model 'pretrained/TSP' --decode_strategy 'greedy' -f --run_mode 'test' --mission 'demo' --dataset_number 1 --size 50"
-```
+2. Run: eg.```commandline "python eval.py --model 'pretrained/TSP' --decode_strategy 'greedy' -f --run_mode 'test' --mission 'demo' --dataset_number 1 --size 50"```
 All the options of command can be replaced following your needs.
 
-* For loss, we implement the TSP, Stress, Moran's I, LA, BW, PR, Symmetry and Correlation.
-* For model, you can change the options 'model' in the 'second_layer_decoder' of nets/attention_model.py.
-* You can replace the default data to yours. First, prepare your data to the size: [num_sample, num_points, dim]. Second, change the dim to your need in nets/attention_model.py. Third, add your data at '__init__' of problems/order/problem_order.py.
-* You can add the loss at 'get_costs' of problems/order/problem_order.py.
-
+### With demo
+1.```commandline
+ python .\flaskfordemo.py
+```
+2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
+3. Choose 'TSP' as the loss.
+4. Brush points in the scatter. And wait seconds.
+5. Then you can freely explore. 
        
