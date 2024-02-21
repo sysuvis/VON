@@ -85,9 +85,8 @@ python run.py --graph_size 50 --baseline rollout --run_name 'test' --mission 'CI
 All the options of command can be replaced following your needs.
 
 ### With demo
-1.```commandline
- python .\flaskfordemo.py
-```
+1.
+```commandline python .\flaskfordemo.py```
 2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
 3. Choose 'TSP' as the loss.
 4. Brush points in the scatter. And wait seconds.
