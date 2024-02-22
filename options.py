@@ -10,14 +10,14 @@ def get_options(args=None):
 
     #yu add
     parser.add_argument('--run_mode', default='train', help="train, test")
-    parser.add_argument('--mission', default='cora', help="dataset name")
+    parser.add_argument('--dataset', default='cora', help="dataset name")
     parser.add_argument('--dataset_number', default=1, help='For test.')
     parser.add_argument('--positional_encoding', default='ori', help="PEP, PEF, PEB")
-    parser.add_argument('--cost_choose', default='tsp', help="stress, moransI, tsp")
+    parser.add_argument('--metric', default='tsp', help="stress, moransI, tsp")
 
     # Data
     parser.add_argument('--problem', default='order', help="The problem to solve, default 'tsp'")
-    parser.add_argument('--graph_size', type=int, default=50, help="The size of the problem graph")
+    parser.add_argument('--sample_size', type=int, default=50, help="The size of the problem graph")
     parser.add_argument('--batch_size', type=int, default=1000, help='Number of instances per batch during training')
     parser.add_argument('--epoch_size', type=int, default=1000, help='Number of instances per epoch during training')
     parser.add_argument('--val_size', type=int, default=5,
@@ -84,7 +84,7 @@ def get_options(args=None):
     opts.run_name = "{}_{}".format(opts.run_name, time.strftime("%Y%m%dT%H%M%S"))
     opts.save_dir = os.path.join(
         opts.output_dir,
-        "{}_{}".format(opts.problem, opts.graph_size),
+        "{}_{}".format(opts.problem, opts.sample_size),
         opts.run_name
     )
     if opts.bl_warmup_epochs is None:

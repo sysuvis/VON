@@ -77,7 +77,7 @@ def train_epoch(model, optimizer, baseline, lr_scheduler, epoch, val_dataset, pr
     # Generate new training data for each epoch
 
     training_dataset = baseline.wrap_dataset(problem.make_dataset(
-        size=opts.graph_size, num_samples=opts.epoch_size, distribution=opts.data_distribution, mode=opts.run_mode, mission=opts.mission, dataset_number=opts.dataset_number, epoch=epoch))
+        size=opts.sample_size, num_samples=opts.epoch_size, distribution=opts.data_distribution, mode=opts.run_mode, dataset=opts.dataset, dataset_number=opts.dataset_number, epoch=epoch))
 
     training_dataloader = DataLoader(training_dataset, batch_size=opts.batch_size, num_workers=0)
 
