@@ -47,7 +47,7 @@ def get_data_tsp():
             re_arry.append(a[my_array[w][0], :].tolist())
         save_dataset(re_arry, f'data/linshifanhuiwenjian/received.pkl')
 
-        os.system("python eval.py --model %s --decode_strategy %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/TSP', 'greedy', 'test', 'demo', 1, len(my_array)))
+        os.system("python eval.py --model %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/TSP', 'test', 'demo', 1, len(my_array)))
         with open('data/linshifanhuiwenjian/1.pkl', 'rb') as f1:
             order = pickle.load(f1)
         with open('data/linshifanhuiwenjian/2.pkl', 'rb') as f2:
@@ -92,7 +92,7 @@ def get_data_sm():
             re_arry.append(a[my_array[w][0], :].tolist())
         save_dataset(re_arry, f'data/linshifanhuiwenjian/received.pkl')
 
-        os.system("python eval.py --model %s --decode_strategy %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/stress', 'greedy', 'test', 'demo', 1, len(my_array)))
+        os.system("python eval.py --model %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/stress', 'greedy', 'test', 'demo', 1, len(my_array)))
         with open('data/linshifanhuiwenjian/1.pkl', 'rb') as f1:
             order = pickle.load(f1)
         with open('data/linshifanhuiwenjian/2.pkl', 'rb') as f2:
@@ -138,7 +138,7 @@ def get_data_mi():
             re_arry.append(a[my_array[w][0], :].tolist())
         save_dataset(re_arry, f'data/linshifanhuiwenjian/received.pkl')
 
-        os.system("python eval.py --model %s --decode_strategy %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/MI', 'greedy', 'test', 'demo', 1, len(my_array)))
+        os.system("python eval.py --model %s -f --run_mode %s --dataset %s --dataset_number %d --sample_size %d" % ('pretrained/MI', 'test', 'demo', 1, len(my_array)))
         with open('data/linshifanhuiwenjian/1.pkl', 'rb') as f1:
             order = pickle.load(f1)
         with open('data/linshifanhuiwenjian/2.pkl', 'rb') as f2:
