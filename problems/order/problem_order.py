@@ -113,13 +113,11 @@ def stress(real_distance, target_distance):
 
 
 def calculate_distance(point1, point2):
-    # 计算两个点之间的距离，这里我们假设点是二维坐标 (x, y)
     x1, y1 = point1
     x2, y2 = point2
     return abs(x1 - x2) + abs(y1 - y2)
 
 def linear_arrangement_from_adjacency_matrix(adj_matrix, order):
-    # 根据指定的行列顺序计算线性排列的距离
     graph = {}
     for i in range(adj_matrix.shape[0]):
         for j in range(adj_matrix.shape[1]):
@@ -143,8 +141,8 @@ class Order(object):
     NAME = 'order'
 
     @staticmethod
-    # def get_costs(dataset, pi, cost_choose=options.get_options().cost_choose):
-    def get_costs(dataset, pi, cost_choose='tsp'):
+    # def get_costs(dataset, pi, metric=options.get_options().metric):
+    def get_costs(datasets, pi, metric='tsp'):
         # Check that tours are valid, i.e. contain 0 to n -1
         assert (
             torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
@@ -152,16 +150,16 @@ class Order(object):
         ).all(), "Invalid tour"
 
         # Gather dataset in order of tour
-        d = dataset.gather(1, pi.unsqueeze(-1).expand_as(dataset)).cuda()
+        d = datasets.gather(1, pi.unsqueeze(-1).expand_as(datasets)).cuda()
 
-        if cost_choose == 'stress':
+        if metric == 'stress':
 
             ret_res = torch.zeros(d.size(0)).cuda()
             for i in range(pi.size(0)):
                 W = d[i, :, :].cuda()
 
                 new_order = pi[i]
-                for b in range(2):
+                for b in range(1):
                     lossh, new_order, res = linear_solver(new_order, eucl_distance_stress(W))
 
                 node_size = W.size(0)
@@ -178,68 +176,21 @@ class Order(object):
                 ret_res[i] = s1
 
             return ret_res, None
-        elif cost_choose == 'moransI':
+        elif metric == 'moransI':
 
             ret_res = torch.zeros(d.size(0))
             for a in range(d.size(0)):
                 ret_res[a] = 1 - moransi(d[a, :, :])
-            return ret_res, None
-
-        elif cost_choose == 'n':
-            num_batches = 10
-            num_nodes = 240
-            ret_res = torch.zeros(d.size(0))
-            path = 'data/dummy_data/dumpydata_train_y_tem.pkl'
-            with open(path, 'rb') as f1:
-                data_tsne = pickle.load(f1).reshape(10, 240)
-
-            path1 = 'data/dummy_data/dumpydata_train_i.pkl'
-            with open(path1, 'rb') as f:
-                true_orders = pickle.load(f)
-            print(pi[0], pi.size())
-            predicted_orders = torch.zeros(10, 240)
-            gt = torch.zeros(10, 240)
-            for i in range(10):
-                for j in range(240):
-                    predicted_orders[i, j] = data_tsne[i, pi[i, j]]
-                    gt[i, j] = data_tsne[i, true_orders[i, j]]
-
-
-
-            # predicted_orders = data_tsne.gather(1, pi.cpu().unsqueeze(-1).expand_as(dataset)).reshape(10, 240)
-            # d1 = data_tsne.gather(1, true_orders.unsqueeze(-1).expand_as(dataset)).reshape(10, 240)
-            #
-            # print(d1.size(), predicted_orders.size())
-
-            # from allrank.models.metrics import ndcg
-            # print(ndcg(predicted_orders, d1))
-
-            # 计算NDCG@5
-            ndcg_scores = []
-            for i in range(10):
-                predicted_order = predicted_orders[i].numpy().tolist()
-                true_order = gt[i].numpy().tolist()
-
-                # 使用sklearn的ndcg_score计算NDCG
-                ret_res[i] = 1 - ndcg_score([true_order], [predicted_order], k=5)
 
             return ret_res, None
 
-        elif cost_choose == "LA":
+        elif metric == "LA":
             ret_res = torch.zeros(d.size(0))
-
-            # #Linear arrangement LA (min) 要用顺序计算，不用坐标计算
+            # #Linear arrangement LA (min)
             path = 'data/sch/sch.json'
             with open(path, "r") as f:
                 row_data = json.load(f)
             row_data = torch.Tensor(row_data)
-            #
-            # with open(f'data/sch/sch.pkl', 'rb') as f1:
-            #     row_data = pickle.load(f1)
-            #
-            # # with open(f'D:/CODE\VON-master\VON\data\sch\sch_bi.pkl', 'rb') as f1:
-            # #     row_data = pickle.load(f1)
-            #
             graphsize = 242
             ret_res = torch.zeros(d.size(0))
             for a in range(d.size(0)):
@@ -257,7 +208,7 @@ class Order(object):
                         tem1 += abs(newim1[s, d + s] * (d))
                 ret_res[a] = tem1
             return ret_res, None
-        elif cost_choose == "BW":
+        elif metric == "BW":
             #Bandwidth BW
             ret_res = torch.zeros(d.size(0))
             for a in range(row_data.size(0)):
@@ -281,7 +232,7 @@ class Order(object):
                         tem1 = te1
                 ret_res[a] = tem1
             return ret_res, None
-        elif cost_choose == "PR":
+        elif metric == "PR":
             # #Profile PR
             ret_res = torch.zeros(d.size(0))
             for a in range(row_data.size(0)):
@@ -346,213 +297,38 @@ class Order(object):
 
 class OrderDataset(Dataset):
 
-    def __init__(self, filename=None, size=50, num_samples=10, offset=0, distribution='None', mode='train', mission='IN', dataset_number=1, epoch=0):
+    def __init__(self, size=50, num_samples=10, mode='train', dataset='IN', dataset_number=1, epoch=0):
         super(OrderDataset, self).__init__()
 
-        if mission == 'fashion_mnist':
+        if dataset == 'fashion_mnist':
             if mode == 'train':
-                with open('data/fashion_mnist/train/fmtofull.pkl', 'rb') as f1:
-                # with open('data/fashion_mnist/train/combine_local_full.pkl', 'rb') as f1:
+                with open('data/FM_50_dis_g_o_tsne.pkl', 'rb') as f1:
                     data_tsne = pickle.load(f1)
                 self.data = data_tsne[:size*num_samples].reshape(num_samples, size, 2)
-                # if num_samples == 10:
-                #     with open('data/fashion_mnist/train/fmtofull.pkl', 'rb') as f1:
-                #     # with open('data/fashion_mnist/train/combine_mix_full.pkl', 'rb') as f1:
-                #         data_tsne = pickle.load(f1)
-                #     self.data = data_tsne[0:num_samples * size].reshape(num_samples, size, 2)
-                # else:
-                #     with open('data/fashion_mnist/train/combine_mix_full.pkl', 'rb') as f1:
-                #         data_tsne = pickle.load(f1)
-                #     # with open('data/fashion_mnist/train/combine_local_full.pkl', 'rb') as f1:
-                #     #     data_tsne = pickle.load(f1)
-                #     self.data = data_tsne[epoch*num_samples * size:epoch*num_samples * size+num_samples * size].reshape(num_samples, size, 2)
             elif mode == 'test':
-                test_model = '50g'
-                if test_model == '50g':
-                    data_tsne = torch.FloatTensor(3, 50, 2)
-                    images = torch.FloatTensor(3, 50, 1, 28, 28)
-                    for i in range(3):
-                        with open(f'data/fashion_mnist/test/50_tsne_data{i + 1}.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)[0]
-                        with open(f'data/fashion_mnist/test/50_im_data{i + 1}.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)[0]
-                elif test_model == '50l':
-                    data_tsne = torch.FloatTensor(10, 50, 2)
-                    images = torch.FloatTensor(10, 50, 1, 28, 28)
-                    for i in range(10):
-                        with open(f'data/fashion_mnist/test/label{i}test.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)
-                        with open(f'data/fashion_mnist/test/label{i}test_im.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)
-                elif test_model == '100g':
-                    data_tsne = torch.FloatTensor(10, 100, 2)
-                    images = torch.FloatTensor(10, 100, 1, 28, 28)
-                    for i in range(10):
-                        with open(f'data/fashion_mnist/test/test_mix{i}_100.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)
-                        with open(f'data/fashion_mnist/test/test_im_mix{i}_100.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)
-                elif test_model == '100l':
-                    data_tsne = torch.FloatTensor(10, 100, 2)
-                    images = torch.FloatTensor(10, 100, 1, 28, 28)
-                    for i in range(10):
-                        with open(f'data/fashion_mnist/test/label{i}test_100.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)
-                        with open(f'data/fashion_mnist/test/label{i}test_im_100.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)
-                elif test_model == '150g':
-                    data_tsne = torch.FloatTensor(10, 150, 2)
-                    images = torch.FloatTensor(10, 150, 1, 28, 28)
-                    for i in range(10):
-                        with open(f'data/fashion_mnist/test/test_mix{i}_150.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)
-                        with open(f'data/fashion_mnist/test/test_im_mix{i}_150.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)
-                elif test_model == '150l':
-                    data_tsne = torch.FloatTensor(10, 150, 2)
-                    images = torch.FloatTensor(10, 150, 1, 28, 28)
-                    for i in range(10):
-                        with open(f'data/fashion_mnist/test/label{i}test_150.pkl', 'rb') as f1:
-                            data_tsne[i, :, :] = pickle.load(f1)
-                        with open(f'data/fashion_mnist/test/label{i}test_im_150.pkl', 'rb') as f2:
-                            images[i, :, :, :, :] = pickle.load(f2)
-                else:
-                    with open(f'data/fashion_mnist/test/{size}_tsne_data{dataset_number}.pkl', 'rb') as f1:
-                        data_tsne = pickle.load(f1)
-                    with open(f'data/fashion_mnist/test/{size}_im_data{dataset_number}.pkl', 'rb') as f2:
-                        images = pickle.load(f2)
-
-                self.data = [data_tsne, images]
+                with open('data/fashion_mnist/FM_50_dis_l_tsne_o_test.pkl', 'rb') as f1:
+                    data_tsne = pickle.load(f1)
+                self.data = [data_tsne, data_tsne]
 
             else:
                 print('Please input right run mode!')
                 assert False
-        elif mission == 'mnist':
-            if mode == 'train':
-                with open('data/mnist/train/combine_full.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[0:num_samples * size].reshape(num_samples, size, 2)
-            elif mode == 'test':
-                with open(f'data/mnist/test/{size}_tsne_data{dataset_number}.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                with open(f'data/mnist/test/{size}_im_data{dataset_number}.pkl', 'rb') as f2:
-                    images = pickle.load(f2)
-
-                self.data = [data_tsne, images]
-            else:
-                print('Please input right run mode!')
-                assert False
-        elif mission == 'CIFAR10':
+        elif dataset == 'CIFAR10':
             if mode == 'train':
                 with open('data/cifar-10_pt/cifar10_for_show_train_20000_tsne10_big.pkl', 'rb') as f1:
                     data_tsne = pickle.load(f1)
-                # self.data = data_tsne[(epoch % 5) * size: (epoch % 5 + 5) * size].reshape(5, size, 2)
                 self.data = data_tsne[:10*50].reshape(10, size, 2)
             elif mode == 'test':
 
                 n = 10
-                with open(f'data/cifar-10_pt/cifar10_for_show_train_10000_tsne5_big.pkl', 'rb') as f1:
+                with open(f'data/cifar-10_pt/cifar10_for_show_train_20000_tsne10_big.pkl', 'rb') as f1:
                     data_tsne = pickle.load(f1)[0:n * 50].reshape(1, n*50, 2)
-                with open(f'data/cifar-10_pt/cifar10_for_show_train_20000_images5.pkl', 'rb') as f2:
-                    images = pickle.load(f2)[0:n * 50].reshape(1, n*50, 3, 32, 32)
-                print(data_tsne.size())
 
-                self.data = [data_tsne, images]
-            else:
-                print('Please input right run mode!')
-                assert False
-        elif mission == 'DBLP':
-            if mode == 'train':
-                # for cora
-                with open('data/DBLP/tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[0:num_samples * size].reshape(num_samples, size, 2)
-            elif mode == 'test':
-                with open('data/DBLP/tsne.pkl', 'rb') as f1:
-                    data_t = pickle.load(f1)[:500, :].reshape(10, 50, 2)
-                self.data = [data_t, data_t]
-            else:
-                print('Please input right run mode!')
-                assert False
-        elif mission == 'cora':
-            if mode == 'train':
-                # for cora
-                with open('data/cora/cora_tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[0:num_samples * size].reshape(num_samples, size, 2)
-            elif mode == 'test':
-                with open('data/cora/cora_tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)[1000:int((1000+500)), :].reshape(10, 50, 2)
-                with open('data/cora/cora_label.pkl', 'rb') as f2:
-                    images = pickle.load(f2)[:50]
-                self.data = [data_tsne, images]
-            else:
-                print('Please input right run mode!')
-                assert False
-        elif mission == 'FLT':
-            if mode == 'train':
-                with open('data/FLT/ori_tsne_full.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[:29,:,:]
-                print(data_tsne.size())
-            elif mode == 'test':
-                with open(f'data/FLT/mean_of_96.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)[:1, :, :]
                 self.data = [data_tsne, data_tsne]
             else:
                 print('Please input right run mode!')
                 assert False
-        elif mission == 'IN':
-            if mode == 'train':
-                with open(f'data/IN/combine_full_tsne_mix.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                print(data_tsne.size())
-                self.data = data_tsne[:size*10].reshape(10, size, 2)
-            elif mode == 'test':
-                size = 50
-                num_samples = 10
-
-                with open(f'data/IN/combine_full_tsne_mix.pkl', 'rb') as f1:
-                    data = pickle.load(f1)[:int(size*num_samples), :].reshape(10, size, 2)
-                # data = data[:int(size*num_samples)].reshape(num_samples, size, 2)
-                with open(f'data/IN/combine_full_tsne_images.pkl', 'rb') as f2:
-                    image = pickle.load(f2)[:int(size*num_samples)].reshape(num_samples, size, 3, 64, 64)
-
-                self.data = [data, image]
-            else:
-                print('Please input right run mode!')
-                assert False
-        elif mission == 'sch':
-            if mode == 'train':
-                with open('data/sch/sch_t_svd32.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[:242*17, :].reshape(17, 242, 32)
-            elif mode == 'test':
-                with open('data/sch/sch_tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                print(data_tsne.size())
-                self.data = [data_tsne[:242*17, :].reshape(17, 242, 2), data_tsne[:242*17, :].reshape(17, 242, 2)]
-        elif mission == 'cars':
-            if mode == 'train':
-                with open('data/cars/cars_tsne2_val.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                self.data = data_tsne[:300, :].reshape(6, 50, 2)
-            elif mode == 'test':
-                with open('data/cars/cars_tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                print(data_tsne.size())
-                self.data = [data_tsne[299:, :].reshape(1, 99, 2), data_tsne[299:, :].reshape(1, 99, 2)]
-
-        elif mission == 'dum':
-            if mode == 'train':
-                with open('data/dummy_data/dumpydata_train_x.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-                path = 'data/dummy_data/dumpydata_train_y.pkl'
-                with open(path, 'rb') as f1:
-                    y = pickle.load(f1).reshape(100, 240)[(epoch % 10):(epoch % 10) + 10, :]
-                self.data = torch.tensor(data_tsne).reshape(100, 240, 20)[(epoch % 10):(epoch % 10) + 10, :, :]
-                save_dataset(y, 'data/dummy_data/dumpydata_train_y_tem.pkl')
-        elif mission == 'demo':
+        elif dataset == 'demo':
             with open(f'data/linshifanhuiwenjian/received.pkl', 'rb') as f1:
                 data = pickle.load(f1)
 
@@ -563,7 +339,7 @@ class OrderDataset(Dataset):
                 data_tsne[i, :, :] = data
             self.data = [data_tsne, images]
         else: #TSP
-            print('Please input right run mission!')
+            print('Please input right run dataset!')
             assert False
         self.size = len(self.data)
 
