@@ -1,3 +1,4 @@
+
 # VON
 Versatile Ordering Network (VON) can be used across tasks, objectives, and data distributions. By leveraging the power of reinforcement learning and a greedy rollout strategy, the network can automatically learn ordering strategies to improve itself.
 
@@ -12,85 +13,87 @@ Versatile Ordering Network (VON) can be used across tasks, objectives, and data 
 * Matplotlib (optional, only for plotting)
 
 ## Files
+### folders
+* **data**: The CIFAR-10 dataset and the SCH dataset that we sampled and cleaned.
+* **demo**: The demo for interactive ordering across scale and metric using the CIFAR-10 dataset.
+* **nets**: The model implementation of VON.
+* **pretrained**: The models with trained parameters, that you can use in testing.
+* **problems**: The definition of ordering task, including the dataset (input), metric definition, and other utility functions.
+* **utils**: The utility functions for training, testing, logging, saving files, and loading parameters.
 
-* data: Including the CIFAR-10 dataset and the sch dataset that we sampled and cleaned.
-* demo: All the code of demo to test the ordering across scale and metric in CIFAR-10 data.
-* nets: The model implementation of VON.
-* pretrained: Including the trained model parameters, that you can use in testing.
-* problems: The task definition of ordering. Including the dataset inputting, metric definition and related tools.
-* utils: The tools for training and testing.
-* eval.py: The testing code.
-* flaskfordemo.py: The server for demo.
-* options.py: The settings for training.
-* reinforce_baselines.py: The baselines of reinforcement.
-* run.py & train.py: The implementations of training.
+### python sources
+* **eval.py**: The code for inferencing.
+* **run.py & train.py**: The code for training. You should run ```python run.py``` during training.
+* **flaskfordemo.py**: The server for the interactive demo.
+* **options.py**: The settings for training.
+* **reinforce_baselines.py**: The baselines of reinforcement.
+
 
 ## Usage
 
 ### How to input your data
 
-1. Prepare your data to the size: [num_sample, num_points, dim]. The 'num_sample' is the sampling number. The 'num_points' is the points amount. The 'dim' is the dimension of your embedding.
-2. Change the 'node_dim' to your need in nets/attention_model.py.
-4. Implement your code at '__init__' of problems/order/problem_order.py. Here is an example for data adding:
+1. Prepare your data as a three-dimensional tensor in the shape of: ```[num_sample, num_points, dim]```. The ```num_sample``` is the sampling number, the ```num_points``` is the points amount, and the ```dim``` is the dimension of your embedding.
+2. Please note that ```dim``` is the dimension of the input data, to modify the encoding dimension of the network you may use the ```node_dim``` in **nets/attention_model.py**.
+3. Implement your code in the ```__init__``` function in **problems/order/problem_order.py**. Here is an example for data adding:
 ```commandline
 ...
-elif mission == 'dblp':
-       if mode == 'train':
-              with open('data/DBLP/dblp_50_dis_mix_train_tsne.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-              self.data = data_tsne
-       elif mode == 'test':
-              with open('data/DBLP/dblp_100_dis_g_o_tsne_test.pkl', 'rb') as f1:
-                    data_tsne = pickle.load(f1)
-              self.data = [data_tsne, data_tsne]
-       else:
-              print('Please input right run mode!')
+elif dataset == 'dblp':
+	if mode == 'train':
+	    with open('data/DBLP/dblp_50_dis_mix_train_tsne.pkl', 'rb') as f1:
+			coordinates = pickle.load(f1)
+			self.data = coordinates 
+	elif mode == 'test':
+		with open('data/DBLP/dblp_100_dis_g_o_tsne_test.pkl', 'rb') as f1:
+			data_tsne = pickle.load(f1)
+			self.data = [coordinates, coordinates]
+	else:
+		print('Please input right run mode!')
 ...
 ```
-Note: The nan and inf are not allowed in data.
+**Note**: Please make sure your data is clean, e.g., without nan and inf.
 
-### How to use your metric
-1. Implement your metric by any way in python.
-2. Add them into 'get_costs' of problems/order/problem_order.py. Here is an example:
+### How to use customized metric
+1. Implement your metric as a function in python, for example:
 ```commandline
 def moransi(d):
        ...
        return ...
+```
+
+2. To make the metric available in the option list, you may add the metric into the ```get_costs``` function in **problems/order/problem_order.py**. Here is an example:
+```commandline
 ...
-elif cost_choose == 'moransI':
+elif metric == 'moransI':
        ret_res = torch.zeros(d.size(0))
        for a in range(d.size(0)):
-              ret_res[a] = 1- moransi(d[a, :, :])
+              ret_res[a] = 1 - moransi(d[a, :, :])
        return ret_res, None
 ```
+**Note**: You may need to convert the metric (larges is better) to a loss (smaller is better). Here we use ```1 - moransi(d[a, :, :])```.
 
 ### Training
 Options:
---graph_size: >=2, eg. 20, 50, 100...;
---run_name: any words are permitted;
---mission: 'CIFAR10', 'fashionmnist';
---cost_choose: TSP, stress, moransI.
+--```dataset```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
+--```metric```: the metric, e.g., 'TSP', 'stress', 'moransI';
+--```sample_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
+--```run_name```: a folder name for saving the models during training (any words are permitted).
 
-For model, you can change the options 'model' in the 'second_layer_decoder' of nets/attention_model.py. You can choose 'm', 'a', 'c' and 'AM'.
-
-eg.
 ```commandline
-python run.py --graph_size 50 --baseline rollout --run_name 'test' --mission 'CIFAR10' --cost_choose stress
+python run.py --sample_size 50 --run_name 'test' --dataset 'CIFAR10' --metric stress
 ```
-### Testing
+### Inferencing
 Options:
---mission: 'CIFAR10', 'fashionmnist', 'demo';
---size: >=2, eg. 20, 50, 100...;
---model: The model lib;
---dataset_number and --decode_strategy are no need to change.
+--```dataset```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
+--```sample_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
+--```model```: the trained model used for ordering.
 
 1. Move the trained model to target file(eg. pretrained/)
-2. Run: eg.``` python eval.py --model 'pretrained/TSP' --decode_strategy 'greedy' -f --run_mode 'test' --mission 'demo' --dataset_number 1 --size 50 ```
+2. Run: eg.``` python eval.py --model 'pretrained/CIFAR-TSP' --run_mode 'test' --dataset 'CIFAR10' --sample_size 50 ```
 All the options of command can be replaced following your needs.
 
-### With demo
-1.```python .\flaskfordemo.py```
-2. Extract the zip package in the demo/cifar10 folder. Then, double click 'panel.html' in the /demo to start.
-3. Choose 'TSP' as the loss.
-4. Brush points in the scatter. And wait seconds.
-5. Then you can freely explore. 
+### Running the interactive demo
+1. Start the server for the demo using ```python .\flaskfordemo.py```.
+2. Extract the zip package in the **demo/cifar10** folder and use a browser to open **panel.html** in the **/demo** folder to start the front end.
+3. Choose a metric in the dropdown list at the top left corner, e.g., 'Moran's I', 'TSP'. The default is 'TSP'.
+4. Brush points in the scatter plot on the left, and view the ordered images on the right.
