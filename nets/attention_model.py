@@ -221,7 +221,7 @@ class AttentionModel(nn.Module):
 
         new_pi = torch.clone(pi)
 
-        cost, mask = self.problem.get_costs(input, new_pi, cost_choose=self.cost_type)
+        cost, mask = self.problem.get_costs(input, new_pi, metric=self.cost_type)
         # Log likelyhood is calculated within the model since returning it per action does not work well with
         # DataParallel since sequences can be of different lengths
         ll = self._calc_log_likelihood(_log_p, pi, mask)
