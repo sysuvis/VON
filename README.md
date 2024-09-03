@@ -27,6 +27,7 @@ Versatile Ordering Network (VON) can be used across tasks, objectives, and data 
 * **flaskfordemo.py**: The server for the interactive demo.
 * **options.py**: The settings for training.
 * **reinforce_baselines.py**: The baselines of reinforcement.
+* The models trained by the metrics from specialized methods of VON-m for Fashion-MNIST, MNIST, ImageNet, and CIFAR-10 are in https://drive.google.com/file/d/14aovO_FJXC9gyuINV4tLiEC5ZgYpI4M-/view?usp=drive_link. After extracting, you can find the corresponding model based on the folder name. For example, "CF_dpq" represents the model trained on the CIFAR-10 dataset using DPQ as the metric. The test datasets are in: https://drive.google.com/file/d/1h93Jr8P2caGq3cpMMp5WTNn1kWRwbucv/view?usp=drive_link.
 
 
 ## Usage
