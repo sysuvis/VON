@@ -109,4 +109,5 @@ All the options of command can be replaced following your needs.
 2. Extract the zip package in the **demo/cifar10** folder and use a browser to open **panel.html** in the **/demo** folder to start the front end. Set the path like: **demo/cifar10/images256/...jpg**.
 3. Choose a metric in the dropdown list in the top left corner, e.g., 'Moran's I', 'TSP'. The default is 'TSP'.
 4. Brush points in the scatter plot on the left, and view the ordered images on the right.
+   
 This demo is a quick way to test the performance of VON. You can reproduce the figure 2 in the appendix of our paper by brushing the scatter plot in the same area.
