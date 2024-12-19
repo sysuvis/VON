@@ -138,7 +138,7 @@ def run(opts):
 
     # Start the actual training loop
     val_dataset = problem.make_dataset(
-        size=opts.sample_size, num_samples=opts.val_size, filename=opts.val_dataset, distribution=opts.data_distribution, mode=opts.run_mode, dataset=opts.dataset, dataset_number=opts.dataset_number)
+        size=opts.sample_size, num_samples=opts.val_size, filename=opts.val_dataset, distribution=opts.data_distribution, mode=opts.run_mode, mission=opts.mission, dataset_number=opts.dataset_number)
 
     if opts.resume:
         epoch_resume = int(os.path.splitext(os.path.split(opts.resume)[-1])[0].split("-")[1])

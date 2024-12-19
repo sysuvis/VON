@@ -13,6 +13,7 @@ from vector import CGaussKernel, CRBFKernel
 import math
 from pathlib import Path
 from PIL import Image
+from utils.data_utils import save_dataset
 
 def create_collage(sorted_1d_filepaths, pixels_per_image=28):
     n_images = len(sorted_1d_filepaths)
@@ -66,7 +67,7 @@ def plot_grid(*images, figsize=6, fignumber="Filter", titles=None, occurences=Fa
         if titles is not None:
             ax.set_title(titles[i], fontsize=figsize * 3)
 
-    plt.savefig(f'results_dpq/{titles}.png')
+    plt.savefig(f'./{titles}.png')
     return 1
 
 #FLAS, DPQ
@@ -466,7 +467,7 @@ class Order(object):
     NAME = 'order'
 
     @staticmethod
-    def get_costs(dataset, pi, cost_choose='image_baseline'):
+    def get_costs(dataset, pi, metric='tsp'):
         # Check that tours are valid, i.e. contain 0 to n -1
         assert (
             torch.arange(pi.size(1), out=pi.data.new()).view(1, -1).expand_as(pi) ==
@@ -475,7 +476,7 @@ class Order(object):
 
         d = dataset.gather(1, pi.unsqueeze(-1).expand_as(dataset)).cuda()
 
-        if cost_choose == 'stress':
+        if metric == 'stress':
 
             ret_res = torch.zeros(d.size(0)).cuda()
             for i in range(pi.size(0)):
@@ -502,7 +503,7 @@ class Order(object):
                 ret_res[i] = s1
 
             return ret_res, None
-        elif cost_choose == 'moransI':
+        elif metric == 'moransI':
 
             ret_res = torch.zeros(d.size(0))
             for a in range(d.size(0)):
@@ -510,12 +511,12 @@ class Order(object):
                 ret_res[a] = 1 - moransi(d[a, :, :])
             return ret_res, None
 
-        elif cost_choose == 'image_baseline':
+        elif metric == 'image_baseline':
 
             ret_res = torch.zeros(d.size(0)).cuda()
-            n1 = 50
+            n1 = 100
             name1 = 'CIFAR10'
-            type1 = 'n'
+            type1 = 'g'
             loss1 = 'KS'
 
             if name1 == 'CIFAR10':
@@ -533,7 +534,7 @@ class Order(object):
 
             #test
             if type1 == 'g':
-                file_path = f'D:/CODE/VON-master/VON/data_baseline/{name1}t/{name1}t_{n1}_dis_g_o_im.pkl'
+                file_path = f'data/{name1}t_{n1}_dis_g_o_im.pkl'
             elif type1 == 'l':
                 file_path = f'data_baseline/{name1}t/{name1}t_{n1}_dis_l_im_o_train.pkl'
             elif type1 == 'n':
@@ -548,7 +549,7 @@ class Order(object):
 
             # for group_idx in range(100):
             for group_idx in range(image_data.shape[0]):
-                
+
                 # loss_isomatch = isomatch_loss(d_image[group_idx], n1, pi[group_idx])
                 # ret_res[group_idx] = loss_isomatch
 
@@ -557,30 +558,38 @@ class Order(object):
                 # ret_res[group_idx] = loss_KS
 
                 #test
-                # loss_KS = KS_loss(d_image[group_idx].cpu(), n1, pi[group_idx].cpu())
-                # ret_res[group_idx] = 1 / loss_KS
+                loss_KS = KS_loss(d_image[group_idx].cpu(), n1, pi[group_idx].cpu())
+                ret_res[group_idx] = 1 / loss_KS
 
                 #FOR TRAIN
                 # loss_DPQ = DPQ_loss(d_image[group_idx])
                 # ret_res[group_idx] = loss_DPQ
 
                 #FOR TEST
-                loss_DPQ = 1 - DPQ_loss(d_image[group_idx])
-                ret_res[group_idx] = loss_DPQ
+                # loss_DPQ = 1 - DPQ_loss(d_image[group_idx])
+                # ret_res[group_idx] = loss_DPQ
 
             #plot image results
-            # loss2 = np.round(ret_res[0].cpu().numpy(),decimals=2).astype(str)
-            #
-            # image_folder = f'D:/CODE/KernelizedSorting-master/data_baseline_t1/{name1}t_{n1}_{type1}/0'
-            # image_paths = [os.path.join(image_folder, fname) for fname in os.listdir(image_folder) if
-            #                fname.endswith(('.png', '.jpg', '.jpeg'))]
-            # reordered_image = [image_paths[i] for i in pi[0]]
-            # X = create_collage(reordered_image)
-            # torch.set_printoptions(precision=3)
-            # print(plot_grid(X, titles=[f"{name1} {n1} {type1} {loss1}={loss2}"]))
+            loss2 = np.round(ret_res[0].cpu().numpy(),decimals=2).astype(str)
+
+            image_folder = f'D:/CODE/KernelizedSorting-master/data_baseline_t1/{name1}t_{n1}_{type1}/0'
+            image_paths = [os.path.join(image_folder, fname) for fname in os.listdir(image_folder) if
+                           fname.endswith(('.png', '.jpg', '.jpeg'))]
+            reordered_image = [image_paths[i] for i in pi[0]]
+            X = create_collage(reordered_image)
+            torch.set_printoptions(precision=3)
+            print(plot_grid(X, titles=[f"{name1} {n1} {type1} {loss1}={loss2}"]))
 
             return ret_res, None
         else:
+            hd = d[0, :, :]
+            loc_dis = torch.zeros(hd.size(0))
+            plus_tem = 0
+            for i in range(hd.size(0) - 1):
+                plus_tem += torch.sqrt(pow((hd[i, 0] - hd[i + 1, 0]), 2) + pow((hd[i, 1] - hd[i + 1, 1]), 2)).cpu()
+                loc_dis[i + 1] = plus_tem
+            save_dataset(loc_dis.tolist(), f'data/linshifanhuiwenjian/2.pkl')
+
             return (d[:, 1:] - d[:, :-1]).norm(p=2, dim=2).sum(1), None
 
 
@@ -615,21 +624,17 @@ class Order(object):
 
 class OrderDataset(Dataset):
 
-    def __init__(self, filename=None, size=50, num_samples=32, offset=0, distribution='None', mode='train', mission='IN', dataset_number=1, epoch=0):
+    def __init__(self, filename=None, size=50, num_samples=32, offset=0, distribution='None', mode='train', mission='FM', dataset_number=1, epoch=0):
         super(OrderDataset, self).__init__()
 
         if mission == 'FM':
             if mode == 'train':
-
-                with open(f'data_baseline/FMt/FMt_50_dis_mix_o_tsne.pkl', 'rb') as f1:
+                with open(f'data/FM_50_dis_g_o_tsne_test.pkl', 'rb') as f1:
                     data_tsne = pickle.load(f1)
                 self.data = data_tsne
             elif mode == 'test':
 
-                name1 = 'FMt'
-                n1 = 50
-                type1 = 'n'
-                file_path = f'D:/CODE/VON-master/VON/data_baseline/{name1}/{name1}_{type1}_{n1}_tsne.pkl'
+                file_path = f'data/fm/50_tsne_data2.pkl'
                 with open(file_path, 'rb') as f1:
                     data_tsne = pickle.load(f1)
                 self.data = data_tsne
@@ -657,14 +662,14 @@ class OrderDataset(Dataset):
                 assert False
         elif mission == 'CF':
             if mode == 'train':
-                with open('data_baseline/CIFAR10/CIFAR10_50_dis_mix_o_tsne.pkl', 'rb') as f1:
+                with open('data/CIFAR10_50_dis_g_o_tsne.pkl', 'rb') as f1:
                     data_tsne = torch.Tensor(pickle.load(f1))
                 self.data = data_tsne
             elif mode == 'test':
-                n1 = 50
+                n1 = 100
                 name1 = 'CIFAR10t'
                 type1 = 'n'
-                file_path = f'D:/CODE/VON-master/VON/data_baseline/{name1}/{name1}_{type1}_{n1}_tsne.pkl'
+                file_path = f'data/CIFAR10t_{n1}_dis_g_o_tsne.pkl'
                 with open(file_path, 'rb') as f1:
                     data_tsne = pickle.load(f1)[:]
                 images = data_tsne
@@ -688,6 +693,16 @@ class OrderDataset(Dataset):
             else:
                 print('Please input right run mode!')
                 assert False
+        elif mission == 'demo':
+            with open(f'data/linshifanhuiwenjian/received.pkl', 'rb') as f1:
+                data = pickle.load(f1)
+
+            data = torch.Tensor(data)  # [:, 1:]
+            data_tsne = torch.FloatTensor(1, data.size(0), 2)
+            images = torch.FloatTensor(1, data.size(0), 1, 1, 1)
+            for i in range(1):
+                data_tsne[i, :, :] = data
+            self.data = [data_tsne, images]
         else: #TSP
             if filename is not None:
                 assert os.path.splitext(filename)[1] == '.pkl'

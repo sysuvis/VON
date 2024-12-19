@@ -10,7 +10,7 @@ def get_options(args=None):
 
     #yu add
     parser.add_argument('--run_mode', default='train', help="train, test")
-    parser.add_argument('--dataset', default='cora', help="dataset name")
+    parser.add_argument('--mission', default='FM', help="dataset name")
     parser.add_argument('--dataset_number', default=1, help='For test.')
     parser.add_argument('--positional_encoding', default='ori', help="PEP, PEF, PEB")
     parser.add_argument('--metric', default='tsp', help="stress, moransI, tsp")
@@ -20,7 +20,7 @@ def get_options(args=None):
     parser.add_argument('--sample_size', type=int, default=50, help="The size of the problem graph")
     parser.add_argument('--batch_size', type=int, default=1000, help='Number of instances per batch during training')
     parser.add_argument('--epoch_size', type=int, default=1000, help='Number of instances per epoch during training')
-    parser.add_argument('--val_size', type=int, default=5,
+    parser.add_argument('--val_size', type=int, default=50,
                         help='Number of instances used for reporting validation performance')
     parser.add_argument('--val_dataset', type=str, default=None, help='Dataset file to use for validation')
 

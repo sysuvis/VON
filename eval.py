@@ -60,7 +60,7 @@ def eval_dataset_mp(args):
 
     model, _ = load_model(opts.model)
     val_size = opts.val_size // num_processes
-    dataset = model.problem.make_dataset(filename=None, num_samples=val_size, offset=opts.offset + val_size * i, mode=opts.run_mode, mission=opts.mission, dataset_number=opts.dataset_number)
+    dataset = model.problem.make_dataset(filename=None, num_samples=val_size, offset=opts.offset + val_size * i, mode=opts.run_mode, mission=opts.mission, dataset_number=1)
     #for test
     dataset = dataset[0]
     device = torch.device("cuda:{}".format(i))
@@ -79,25 +79,13 @@ def eval_dataset(dataset_path, width, softmax_temp, opts):
 
     else:
         device = torch.device("cuda:0" if use_cuda else "cpu")
-        datasett = model.problem.make_dataset(filename=None, num_samples=opts.val_size, offset=opts.offset, size=opts.sample_size, mode=opts.run_mode, dataset=opts.dataset, dataset_number=opts.dataset_number)
+        dataset = model.problem.make_dataset(filename=None, num_samples=opts.val_size, offset=opts.offset, size=opts.size, mode=opts.run_mode, mission=opts.mission, dataset_number=1)
         #for test
-        datasett = datasett[0]
+        dataset = dataset[0]
 
-        results, neworder= _eval_dataset(model, datasett, width, softmax_temp, opts, device)
+        neworder= _eval_dataset(model, dataset, width, softmax_temp, opts, device)
 
     save_dataset(neworder[0], f'data/linshifanhuiwenjian/1.pkl')
-    parallelism = opts.eval_batch_size
-
-    costs, tours, durations = zip(*results)  # Not really costs since they should be negative
-
-    print("First cost: {}".format(costs[0]))
-    print("Mean cost: {}".format(np.mean(costs)))
-    print(costs, neworder)
-
-    print("Average cost: {} +- {}".format(np.mean(costs), 2 * np.std(costs) / np.sqrt(len(costs))))
-    print("Average serial duration: {} +- {}".format(
-        np.mean(durations), 2 * np.std(durations) / np.sqrt(len(durations))))
-    print("Average parallel duration: {}".format(np.mean(durations) / parallelism))
 
     return neworder
 
@@ -120,16 +108,36 @@ def _eval_dataset(model, dataset, width, softmax_temp, opts, device):
         return_batch.append(batch)
         batch = move_to(batch, device)
 
-        start = time.time()
-        assert width == 0, "Do not set width when using greedy"
-        assert opts.eval_batch_size <= opts.max_calc_batch_size, \
-            "eval_batch_size should be smaller than calc batch size"
-        batch_rep = 1
-        iter_rep = 1
-        assert batch_rep > 0
-        sequences, costs = model.sample_many(batch, batch_rep=batch_rep, iter_rep=iter_rep)
-        batch_size = len(costs)
-        ids = torch.arange(batch_size, dtype=torch.int64, device=costs.device)
+        # start = time.time()
+        with torch.no_grad():
+            if opts.decode_strategy in ('sample', 'greedy'):
+                if opts.decode_strategy == 'greedy':
+                    assert width == 0, "Do not set width when using greedy"
+                    assert opts.eval_batch_size <= opts.max_calc_batch_size, \
+                        "eval_batch_size should be smaller than calc batch size"
+                    batch_rep = 1
+                    iter_rep = 1
+                elif width * opts.eval_batch_size > opts.max_calc_batch_size:
+                    assert opts.eval_batch_size == 1
+                    assert width % opts.max_calc_batch_size == 0
+                    batch_rep = opts.max_calc_batch_size
+                    iter_rep = width // opts.max_calc_batch_size
+                else:
+                    batch_rep = width
+                    iter_rep = 1
+                assert batch_rep > 0
+                # This returns (batch_size, iter_rep shape)
+                sequences, costs = model.sample_many(batch, batch_rep=batch_rep, iter_rep=iter_rep)
+                batch_size = len(costs)
+                ids = torch.arange(batch_size, dtype=torch.int64, device=costs.device)
+            else:
+                assert opts.decode_strategy == 'bs'
+
+                cum_log_p, sequences, costs, ids, batch_size = model.beam_search(
+                    batch, beam_size=width,
+                    compress_mask=opts.compress_mask,
+                    max_calc_batch_size=opts.max_calc_batch_size
+                )
 
         if sequences is None:
             sequences = [None] * batch_size
@@ -140,15 +148,16 @@ def _eval_dataset(model, dataset, width, softmax_temp, opts, device):
                 ids.cpu().numpy() if ids is not None else None,
                 batch_size
             )
-        duration = time.time() - start
+        # duration = time.time() - start
         for seq, cost in zip(sequences, costs):
             seq = seq.tolist()
 
 
-            results.append((cost, seq, duration))
+            # results.append((cost, seq, duration))
             return_order.append(seq)
+    print("Costs of metric are:", costs)
 
-    return results, return_order
+    return return_order
 
 
 if __name__ == "__main__":
@@ -162,10 +171,12 @@ if __name__ == "__main__":
                         help='Offset where to start in dataset (default 0)')
     parser.add_argument('--eval_batch_size', type=int, default=1024,
                         help="Batch size to use during (baseline) evaluation")
+    # parser.add_argument('--decode_type', type=str, default='greedy',
+    #                     help='Decode type, greedy or sampling')
     parser.add_argument('--width', type=int, nargs='+',
                         help='Sizes of beam to use for beam search (or number of samples for sampling), '
                              '0 to disable (default), -1 for infinite')
-    parser.add_argument('--decode_strategy', type=str,
+    parser.add_argument('--decode_strategy', type=str, default='greedy',
                         help='Beam search (bs), Sampling (sample) or Greedy (greedy)')
     parser.add_argument('--softmax_temperature', type=parse_softmax_temperature, default=1,
                         help="Softmax temperature (sampling or bs)")
@@ -180,11 +191,11 @@ if __name__ == "__main__":
 
     #yu add
     parser.add_argument('--run_mode', default='test', help="train, test")
-    parser.add_argument('--dataset', default='fashion_mnist', help="dataset name")
-    parser.add_argument('--dataset_number', default=1, help='For test.')
+    parser.add_argument('--mission', default='fashion_mnist', help="dataset name")
+    # parser.add_argument('--dataset_number', default=1, help='For test.')
     parser.add_argument('--positional_encoding', default='PEP', help="PEP, PEF, PEB")
-    parser.add_argument('--cost_choose', default='tsp', help="stress, moransI, tsp")
-    parser.add_argument('--sample_size', default=100, help="20, 50, 100")
+    parser.add_argument('--metric', default='tsp', help="stress, moransI, tsp")
+    parser.add_argument('--size', default=50, help="20, 50, 100")
 
     opts = parser.parse_args()
 
