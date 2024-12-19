@@ -75,14 +75,25 @@ elif metric == 'moransI':
 
 ### Training
 Options:
---```dataset```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
+--```mission```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
 --```metric```: the metric, e.g., 'TSP', 'stress', 'moransI';
---```sample_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
+--```graph_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
 --```run_name```: a folder name for saving the models during training (any words are permitted).
 
 ```commandline
-python run.py --sample_size 50 --run_name 'test' --dataset 'CIFAR10' --metric stress
+python run.py --graph_size 50 --run_name test --mission FM --metric tsp
 ```
+You can try your settings to train your model by this command.
+
+### Testing
+Options:
+--```model```: the path of model, e.g., 'pretrained/test';
+--```run_mode```: the mode set, a.g., 'test';
+```commandline
+python eval.py --model pretrained/test -f --run_mode test --mission FM
+```
+After training, you can test your model by this command.
+
 ### Inferencing
 Options:
 --```dataset```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
@@ -95,6 +106,7 @@ All the options of command can be replaced following your needs.
 
 ### Running the interactive demo
 1. Start the server for the demo using ```python .\flaskfordemo.py```.
-2. Extract the zip package in the **demo/cifar10** folder and use a browser to open **panel.html** in the **/demo** folder to start the front end.
-3. Choose a metric in the dropdown list at the top left corner, e.g., 'Moran's I', 'TSP'. The default is 'TSP'.
+2. Extract the zip package in the **demo/cifar10** folder and use a browser to open **panel.html** in the **/demo** folder to start the front end. Set the path like: **demo/cifar10/images256/...jpg**.
+3. Choose a metric in the dropdown list in the top left corner, e.g., 'Moran's I', 'TSP'. The default is 'TSP'.
 4. Brush points in the scatter plot on the left, and view the ordered images on the right.
+This demo is a quick way to test the performance of VON. You can reproduce the figure 2 in the appendix of our paper by brushing the scatter plot in the same area.
