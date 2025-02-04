@@ -106,6 +106,7 @@ Options:
 All the options of command can be replaced following your needs.
 
 ### Running the interactive demo
+** Before starting, please confirm that your environment contains all of the dependencies mentioned above.
 1. Start the server for the demo using ```python .\flaskfordemo.py```.
 2. Extract the zip package in the **demo/cifar10** folder and use a browser to open **panel.html** in the **/demo** folder to start the front end. Set the path like: **demo/cifar10/images256/...jpg**.
 3. Choose a metric in the dropdown list in the top left corner, e.g., 'Moran's I', 'TSP'. The default is 'TSP'.
