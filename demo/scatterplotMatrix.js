@@ -8,7 +8,7 @@
  let brush_ids = new Array();
  const buttonValue = document.getElementById("select2");
  var path = 'http://127.0.0.1:7000';
- var url = path+'/api/data/TSP';
+ var url = path+'/api/data/MI';
  query_stb={};
  query_bts={};
  let brush_ticks = [];
@@ -1613,7 +1613,7 @@ d3.select(this)
        }else if(lossValue == "Moran's I"){
            url = path+'/api/data/MI';
        }else{
-           url = path+'/api/data/TSP';
+           url = path+'/api/data/MI';
        };
        console.log(url);
     });
