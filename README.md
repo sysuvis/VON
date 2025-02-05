@@ -22,6 +22,10 @@ Versatile Ordering Network (VON) can be used across tasks, objectives, and data 
 * math
 * argparse
 
+When pytorch=2.6, `torch.load` may encounter an error when called:
+_pickle.UnpicklingError: Weights only load failed. WeightsUnpickler error: Unsupported global: GLOBAL nets.attention_model.AttentionModel was not an allowed global by default.
+The reason is pytorch2.6 changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. The latest version fixed this issue by adding the set of `weights_only` in the use of `torch.load` in utils/function.py.
+
 ## Files
 ### folders
 * **data**: The CIFAR-10 dataset and the SCH dataset that we sampled and cleaned.
