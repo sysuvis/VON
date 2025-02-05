@@ -20,7 +20,7 @@ def load_problem(name):
 
 
 def torch_load_cpu(load_path):
-    return torch.load(load_path, map_location=lambda storage, loc: storage)  # Load on CPU
+    return torch.load(load_path, weights_only=False, map_location=lambda storage, loc: storage)  # Load on CPU
 
 
 def move_to(var, device):
@@ -40,7 +40,7 @@ def _load_model_file(load_path, model):
         os.path.join(
             os.getcwd(),
             load_path
-        ), map_location=lambda storage, loc: storage)
+        ), weights_only=False, map_location=lambda storage, loc: storage)
 
     if isinstance(load_data, dict):
         load_optimizer_state_dict = load_data.get('optimizer', None)
