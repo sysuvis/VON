@@ -117,6 +117,7 @@ All the options of command can be replaced following your needs.
 
 ### Running the interactive demo
 ** Before starting, please confirm that your environment contains all of the dependencies mentioned above.
+** The default version is for torch on GPU. If your environment is CPU, please replace the problems/order/problem_order.py with problems/order/problem_order_cpu.py.
 1. Start the server for the demo using ```python .\flaskfordemo.py```.
 2. Extract the zip package in the **demo/cifar10** folder, then make sure all the extracted pictures' path like: **demo/cifar10/images256/cf10_image_xxx.jpg**. (Some decompression methods add an extra subfolder, e.g. **demo/cifar10/images256/images256/cf10_image_xxx.jpg**, which may cause file reading errors.)
 3. Use a browser to open **panel.html** in the **/demo** folder to start the front end.
