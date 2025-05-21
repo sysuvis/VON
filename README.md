@@ -92,11 +92,11 @@ elif metric == 'moransI':
 Options:
 --```mission```: the dataset, e.g.,  'CIFAR10', 'fashionmnist';
 --```metric```: the metric, e.g., 'TSP', 'stress', 'moransI';
---```graph_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
+--```sample_size```: the number of points to be ordered (>=2), e.g. 20, 50, 100...;
 --```run_name```: a folder name for saving the models during training (any words are permitted).
 
 ```commandline
-python run.py --graph_size 50 --run_name test --mission FM --metric tsp
+python run.py --sample_size 50 --run_name test --mission FM --metric tsp
 ```
 You can try your settings to train your model by this command.
 
